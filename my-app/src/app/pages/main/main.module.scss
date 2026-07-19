@@ -25,20 +25,9 @@ $danger: #ef4444;
   margin: 0 auto;
 }
 
-.roleSwitcher {
+.authForm {
   display: flex;
   gap: 10px;
-}
-
-.adminAlerts {
-  background: rgba($danger, 0.1);
-  border: 1px solid rgba($danger, 0.3);
-  border-radius: 8px;
-  padding: 15px;
-  max-width: 1200px;
-  margin: 20px auto 0 auto;
-  h4 { margin: 0 0 10px 0; color: #f87171; }
-  p { margin: 4px 0; font-size: 13px; color: #cbd5e1; }
 }
 
 .mainGrid {
@@ -48,7 +37,9 @@ $danger: #ef4444;
   max-width: 1200px;
   margin: 30px auto 0 auto;
 
-  @media (max-width: 768px) { grid-template-columns: 1fr; }
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sidebar {
@@ -62,12 +53,23 @@ $danger: #ef4444;
   border: 1px solid $border-color;
   border-radius: 12px;
   padding: 20px;
-  h3 { margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid $border-color; padding-bottom: 8px; font-size: 16px; }
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid $border-color;
+    padding-bottom: 8px;
+    font-size: 16px;
+  }
 }
 
-.postForm { display: flex; flex-direction: column; gap: 12px; }
+.postForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-.input {
+.input, .textarea {
   background: $bg-main;
   border: 1px solid $border-color;
   color: $text-main;
@@ -75,26 +77,55 @@ $danger: #ef4444;
   border-radius: 6px;
   outline: none;
   font-size: 14px;
-  &:focus { border-color: $accent-primary; }
+
+  &:focus {
+    border-color: $accent-primary;
+  }
 }
 
-.libraryItem {
-  font-size: 13px;
-  padding: 6px 0;
-  border-bottom: 1px dashed $border-color;
-  color: #cbd5e1;
+.textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
-.feedContainer { display: flex; flex-direction: column; gap: 20px; }
-.postsList { display: flex; flex-direction: column; gap: 20px; }
+.feedContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tabs {
+  display: flex;
+  gap: 15px;
+  border-bottom: 1px solid $border-color;
+}
+
+.tabLink {
+  background: none;
+  border: none;
+  color: $text-muted;
+  padding: 10px 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.activeTabLink {
+  color: $accent-primary;
+  border-bottom: 2px solid $accent-primary;
+}
+
+.postsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
 .postCard {
   background: $bg-card;
   border: 1px solid $border-color;
   border-radius: 12px;
   padding: 24px;
-  h3 { margin: 0 0 10px 0; font-size: 22px; }
-  p { color: #cbd5e1; margin: 6px 0; font-size: 14px; }
 }
 
 .postHeader {
@@ -103,29 +134,28 @@ $danger: #ef4444;
   align-items: center;
   font-size: 14px;
   color: $text-muted;
+  border-bottom: 1px solid rgba($border-color, 0.5);
+  padding-bottom: 10px;
   margin-bottom: 12px;
 }
 
+.tripContentLayout {
+  @media (max-width: 576px) {
+    flex-direction: column !important;
+    img {
+      width: 100% !important;
+      height: 180px !important;
+    }
+  }
+}
+
 .privateBadge {
-  background: rgba($accent-primary, 0.15);
+  background: rgba($accent-primary, 0.1);
   color: $accent-primary;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 11px;
-  border: 1px solid rgba($accent-primary, 0.3);
-}
-
-.dangerBadge {
-  background: rgba($danger, 0.15);
-  color: #f87171;
-  border-color: rgba($danger, 0.3);
-}
-
-.authorActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  border: 1px solid rgba($accent-primary, 0.15);
 }
 
 .btnPrimary {
@@ -136,8 +166,8 @@ $danger: #ef4444;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  &:disabled { background: $border-color; color: $text-muted; cursor: not-allowed; }
-  &:hover:not(:disabled) { background: $accent-hover; }
+
+  &:hover { background: $accent-hover; }
 }
 
 .btnSecondary {
@@ -147,17 +177,6 @@ $danger: #ef4444;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  &:disabled { color: $text-muted; cursor: not-allowed; opacity: 0.5; }
-  &:hover:not(:disabled) { background: rgba(255,255,255,0.05); }
-}
 
-.activeTabLink {
-  border-color: $accent-primary;
-  color: $accent-primary;
-}
-
-.btnEdit {
-  @extend .btnSecondary;
-  padding: 4px 10px;
-  font-size: 12px;
+  &:hover { background: rgba(255,255,255,0.05); }
 }

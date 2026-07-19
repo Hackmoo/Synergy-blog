@@ -1,19 +1,23 @@
+'use client';
+
 import React, { useState } from 'react';
 import css from './main.module.scss';
 
-interface Book {
-  id: string; title: string; author: string; category: string;
-  year: number; price: number; isAvailable: boolean; status: string;
-}
-interface Rental {
-  id: string; bookId: string; bookTitle: string; user: string;
-  duration: string; expiresAt: string; reminded: boolean;
+interface Trip {
+  id: string;
+  userId: string;
+  userName: string;
+  title: string;
+  description: string;
+  cost: number;
+  imageUrl: string;
+  placesToVisit: string;
+  createdAt: string;
 }
 
-const DEFAULT_BOOKS: Book[] = [
-  { id: '1', title: 'Преступление и наказание', author: 'Фёдор Достоевский', category: 'Классика', year: 1866, price: 450, isAvailable: true, status: 'Новинка' },
-  { id: '2', title: 'Мастер и Маргарита', author: 'Михаил Булгаков', category: 'Фантастика', year: 1940, price: 500, isAvailable: true, status: 'Популярное' },
-  { id: '3', title: '1984', author: 'Джордж Оруэлл', category: 'Антиутопия', year: 1949, price: 400, isAvailable: true, status: 'В наличии' }
+const DEFAULT_TRIPS: Trip[] = [
+  { id: '1', userId: 'alex', userName: 'Алексей', title: 'Выходные в Казани', description: 'Прекрасная поездка, посетили Кремль и попробовали эчпочмаки.', cost: 15000, imageUrl: 'https://unsplash.com', placesToVisit: 'Казанский Кремль, ул. Баумана, Кул-Шариф', createdAt: '15.07.2026' },
+  { id: '2', userId: 'marta', userName: 'Марта', title: 'Прогулки по Санкт-Петербургу', description: 'Погода порадовала, Эрмитаж как всегда великолепен.', cost: 25000, imageUrl: 'https://unsplash.com', placesToVisit: 'Эрмитаж, Спас на Крови, Петергоф', createdAt: '18.07.2026' }
 ];
 
 export const Main: React.FC = () => {
@@ -24,172 +28,140 @@ export const Main: React.FC = () => {
     return JSON.parse(fallback);
   };
 
-  const [role, setRole] = useState<'user' | 'admin'>('user');
-  const [books, setBooks] = useState<Book[]>(() => getStorage('bk_books', JSON.stringify(DEFAULT_BOOKS)));
-  const [rentals, setRentals] = useState<Rental[]>(() => getStorage('bk_rentals', '[]'));
-  const [purchases, setPurchases] = useState<string[]>(() => getStorage('bk_purchases', '[]'));
+  const [currentUser, setCurrentUser] = useState<{id: string; username: string} | null>(() => getStorage('tr_user', 'null'));
+  const [trips, setTrips] = useState<Trip[]>(() => getStorage('tr_trips', JSON.stringify(DEFAULT_TRIPS))); 
+  
+  const [authInput, setAuthInput] = useState('');
+  const [tab, setTab] = useState<'all' | 'my'>('all');
 
-  const [sortCategory, setSortCategory] = useState('');
-  const [sortAuthor, setSortAuthor] = useState('');
-  const [sortYear, setSortYear] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [cost, setCost] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [placesToVisit, setPlacesToVisit] = useState('');
 
-  const [newTitle, setNewTitle] = useState('');
-  const [newAuthor, setNewAuthor] = useState('');
-  const [newCategory, setNewCategory] = useState('');
-  const [newYear, setNewYear] = useState('');
-  const [newPrice, setNewPrice] = useState('');
-  const [newStatus, setNewStatus] = useState('В наличии');
-  const [editId, setEditId] = useState<string | null>(null);
+  const saveTrips = (newTrips: Trip[]) => {
+    setTrips(newTrips);
+    localStorage.setItem('tr_trips', JSON.stringify(newTrips));
+  };
 
-  const today = new Date();
-  const notifications: string[] = [];
-
-  rentals.forEach((r) => {
-    const expDate = new Date(r.expiresAt);
-    const diffTime = expDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays <= 3 && diffDays >= 0) {
-      notifications.push(`Автоматическое напоминание пользователю ${r.user}: Срок аренды книги "${r.bookTitle}" истекает через ${diffDays} дн. (${r.duration})`);
-    }
-  });
-
-  const saveBooks = (newBooks: Book[]) => { setBooks(newBooks); localStorage.setItem('bk_books', JSON.stringify(newBooks)); };
-
-  const handleAddOrEditBook = (e: React.FormEvent) => {
+  const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newAuthor.trim()) return;
-    if (editId) {
-      saveBooks(books.map(b => b.id === editId ? { ...b, title: newTitle, author: newAuthor, category: newCategory, year: Number(newYear), price: Number(newPrice), status: newStatus } : b));
-      setEditId(null);
-    } else {
-      saveBooks([...books, { id: Date.now().toString(), title: newTitle, author: newAuthor, category: newCategory, year: Number(newYear) || 2024, price: Number(newPrice) || 0, isAvailable: true, status: newStatus }]);
-    }
-    setNewTitle(''); setNewAuthor(''); setNewCategory(''); setNewYear(''); setNewPrice(''); setNewStatus('В наличии');
+    if (!authInput.trim()) return;
+    const user = { id: authInput.toLowerCase().replace(/\s+/g, ''), username: authInput.trim() };
+    setCurrentUser(user);
+    localStorage.setItem('tr_user', JSON.stringify(user));
+    setAuthInput('');
   };
 
-  const toggleAvailability = (id: string) => { saveBooks(books.map(b => b.id === id ? { ...b, isAvailable: !b.isAvailable } : b)); };
-
-  const handleBuy = (book: Book) => {
-    if (!book.isAvailable) return;
-    const updated = [...purchases, book.title];
-    setPurchases(updated);
-    localStorage.setItem('bk_purchases', JSON.stringify(updated));
-    saveBooks(books.map(b => b.id === book.id ? { ...b, isAvailable: false } : b));
-    alert(`Вы успешно купили книгу "${book.title}"!`);
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('tr_user');
   };
 
-  const handleRent = (book: Book, duration: string, days: number) => {
-    if (!book.isAvailable) return;
-    const expires = new Date();
-    expires.setDate(expires.getDate() + days);
-    const updated = [...rentals, { id: Date.now().toString(), bookId: book.id, bookTitle: book.title, user: 'User_Guest', duration, expiresAt: expires.toISOString(), reminded: false }];
-    setRentals(updated);
-    localStorage.setItem('bk_rentals', JSON.stringify(updated));
-    saveBooks(books.map(b => b.id === book.id ? { ...b, isAvailable: false } : b));
-    alert(`Книга "${book.title}" арендована на ${duration}!`);
+  const handleAddTrip = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !title.trim() || !description.trim()) return;
+
+    const newTrip: Trip = {
+      id: Date.now().toString(),
+      userId: currentUser.id,
+      userName: currentUser.username,
+      title: title.trim(),
+      description: description.trim(),
+      cost: Number(cost) || 0,
+      imageUrl: imageUrl.trim() || 'https://unsplash.com',
+      placesToVisit: placesToVisit.trim(),
+      createdAt: new Date().toLocaleDateString()
+    };
+
+    saveTrips([newTrip, ...trips]);
+    setTitle(''); setDescription(''); setCost(''); setImageUrl(''); setPlacesToVisit('');
   };
 
-  const filteredBooks = books.filter(b => {
-    if (sortCategory && b.category.toLowerCase() !== sortCategory.toLowerCase()) return false;
-    if (sortAuthor && !b.author.toLowerCase().includes(sortAuthor.toLowerCase())) return false;
-    if (sortYear && b.year !== Number(sortYear)) return false;
+  const filteredTrips = trips.filter(t => {
+    if (tab === 'my') return currentUser && t.userId === currentUser.id;
     return true;
   });
-
-  const categories = Array.from(new Set(books.map(b => b.category)));
-
   return (
     <div className={css.container}>
       <header className={css.header}>
-        <h2>BookStore Concept</h2>
+        <h2>Дневник Путешествий</h2>
         <div className={css.roleSwitcher}>
-          <button onClick={() => setRole('user')} className={`${css.btnSecondary} ${role === 'user' ? css.activeTabLink : ''}`}>Интерфейс Пользователя</button>
-          <button onClick={() => setRole('admin')} className={`${css.btnSecondary} ${role === 'admin' ? css.activeTabLink : ''}`}>Интерфейс Админа</button>
+          {currentUser ? (
+            <div>
+              <span style={{ marginRight: '15px' }}>Привет, <strong>{currentUser.username}</strong></span>
+              <button onClick={handleLogout} className={css.btnSecondary}>Выйти</button>
+            </div>
+          ) : (
+            <form onSubmit={handleAuth} className={css.authForm}>
+              <input value={authInput} onChange={e => setAuthInput(e.target.value)} placeholder="Имя путешественника" className={css.input} required />
+              <button type="submit" className={css.btnPrimary}>Войти</button>
+            </form>
+          )}
         </div>
       </header>
 
-      {role === 'admin' && notifications.length > 0 && (
-        <div className={css.adminAlerts}>
-          <h4>Система уведомлений (Автоматически):</h4>
-          {notifications.map((n, i) => <p key={i}>⚠️ {n}</p>)}
-        </div>
-      )}
-
       <div className={css.mainGrid}>
         <aside className={css.sidebar}>
-          {role === 'admin' ? (
+          {currentUser ? (
             <div className={css.card}>
-              <h3>{editId ? 'Редактировать книгу' : 'Добавить книгу'}</h3>
-              <form onSubmit={handleAddOrEditBook} className={css.postForm}>
-                <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Название" className={css.input} required />
-                <input value={newAuthor} onChange={e => setNewAuthor(e.target.value)} placeholder="Автор" className={css.input} required />
-                <input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Категория" className={css.input} />
-                <input type="number" value={newYear} onChange={e => setNewYear(e.target.value)} placeholder="Год" className={css.input} />
-                <input type="number" value={newPrice} onChange={e => setNewPrice(e.target.value)} placeholder="Цена" className={css.input} />
-                <select value={newStatus} onChange={e => setNewStatus(e.target.value)} className={css.input}>
-                  <option value="В наличии">В наличии</option>
-                  <option value="Новинка">Новинка</option>
-                  <option value="Популярное">Популярное</option>
-                </select>
-                <button type="submit" className={css.btnPrimary}>{editId ? 'Сохранить' : 'Добавить'}</button>
-                {editId && <button type="button" onClick={() => { setEditId(null); setNewTitle(''); setNewAuthor(''); }} className={css.btnSecondary}>Отмена</button>}
+              <h3>Добавить поездку</h3>
+              <form onSubmit={handleAddTrip} className={css.postForm}>
+                <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Название (куда и когда)" className={css.input} required />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Описание ваших впечатлений..." className={css.textarea} required />
+                <input type="number" value={cost} onChange={e => setCost(e.target.value)} placeholder="Стоимость (в ₽)" className={css.input} />
+                <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="Ссылка на фото (URL)" className={css.input} />
+                <input value={placesToVisit} onChange={e => setPlacesToVisit(e.target.value)} placeholder="Что посетить (через запятую)" className={css.input} />
+                <button type="submit" className={css.btnPrimary}>Опубликовать дневник</button>
               </form>
             </div>
           ) : (
             <div className={css.card}>
-              <h3>Фильтры и Сортировка</h3>
-              <div className={css.postForm}>
-                <select value={sortCategory} onChange={e => setSortCategory(e.target.value)} className={css.input}>
-                  <option value="">Все категории</option>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <input value={sortAuthor} onChange={e => setSortAuthor(e.target.value)} placeholder="Поиск автора..." className={css.input} />
-                <input type="number" value={sortYear} onChange={e => setSortYear(e.target.value)} placeholder="Точный год..." className={css.input} />
-                {(sortCategory || sortAuthor || sortYear) && (
-                  <button onClick={() => { setSortCategory(''); setSortAuthor(''); setSortYear(''); }} className={css.btnSecondary}>Сбросить</button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {role === 'user' && (purchases.length > 0 || rentals.length > 0) && (
-            <div className={css.card}>
-              <h3>Моя библиотека</h3>
-              {purchases.map((p, i) => <div key={i} className={css.libraryItem}>📖 [Куплено] {p}</div>)}
-              {rentals.map((r, i) => <div key={i} className={css.libraryItem}>⏳ [Аренда] {r.bookTitle} (до {new Date(r.expiresAt).toLocaleDateString()})</div>)}
+              <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>Войдите в систему, чтобы начать записывать свои путешествия и делиться локациями.</p>
             </div>
           )}
         </aside>
 
         <main className={css.feedContainer}>
-          <div className={css.postsList}>
-            {filteredBooks.map(b => (
-              <article key={b.id} className={css.postCard}>
-                <div className={css.postHeader}>
-                  <span>{b.category} • {b.year} г.</span>
-                  <span className={`${css.privateBadge} ${b.isAvailable ? '' : css.dangerBadge}`}>{b.status} ({b.isAvailable ? 'Доступна' : 'Выдана/Нет'})</span>
-                </div>
-                <h3>{b.title}</h3>
-                <p>Автор: <strong>{b.author}</strong></p>
-                <p>Стоимость: <strong>{b.price} ₽</strong></p>
+          <div className={css.tabs}>
+            <button onClick={() => setTab('all')} className={`${css.tabLink} ${tab === 'all' ? css.activeTabLink : ''}`}>Все путешествия</button>
+            {currentUser && <button onClick={() => setTab('my')} className={`${css.tabLink} ${tab === 'my' ? css.activeTabLink : ''}`}>Мои записи</button>}
+          </div>
 
-                {role === 'user' ? (
-                  <div className={css.authorActions}>
-                    <button onClick={() => handleBuy(b)} disabled={!b.isAvailable} className={css.btnPrimary}>Купить</button>
-                    <button onClick={() => handleRent(b, '2 недели', 14)} disabled={!b.isAvailable} className={css.btnSecondary}>Аренда 2 нед.</button>
-                    <button onClick={() => handleRent(b, '1 месяц', 30)} disabled={!b.isAvailable} className={css.btnSecondary}>1 месяц</button>
-                    <button onClick={() => handleRent(b, '3 месяца', 90)} disabled={!b.isAvailable} className={css.btnSecondary}>3 месяца</button>
+          <div className={css.postsList}>
+            {filteredTrips.length === 0 ? (
+              <p style={{ color: '#94a3b8', textAlign: 'center' }}>Записей пока нет.</p>
+            ) : (
+              filteredTrips.map(t => (
+                <article key={t.id} className={css.postCard}>
+                  <div className={css.postHeader}>
+                    <span>Автор: <strong>@{t.userName}</strong></span>
+                    <span>{t.createdAt}</span>
                   </div>
-                ) : (
-                  <div className={css.authorActions}>
-                    <button onClick={() => { setEditId(b.id); setNewTitle(b.title); setNewAuthor(b.author); setNewCategory(b.category); setNewYear(String(b.year)); setNewPrice(String(b.price)); setNewStatus(b.status); }} className={css.btnEdit}>Редактировать</button>
-                    <button onClick={() => toggleAvailability(b.id)} className={css.btnSecondary}>{b.isAvailable ? 'Сделать недоступной' : 'Сделать доступной'}</button>
+                  
+                  <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }} className={css.tripContentLayout}>
+                    <img src={t.imageUrl} alt={t.title} style={{ width: '180px', height: '120px', objectFit: 'cover', borderRadius: '8px' }} />
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>{t.title}</h3>
+                      <p style={{ color: '#cbd5e1', fontSize: '14px', margin: '0 0 12px 0' }}>{t.description}</p>
+                      
+                      <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                        <span className={css.privateBadge}>💰 Бюджет: {t.cost.toLocaleString()} ₽</span>
+                        {t.placesToVisit && (
+                          <span className={css.privateBadge} style={{ background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.2)' }}>
+                            📍 Места: {t.placesToVisit}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </article>
-            ))}
+                </article>
+              ))
+            )}
           </div>
         </main>
       </div>
     </div>
-  )};
+  );
+};
